@@ -1,12 +1,13 @@
 import java.security.MessageDigest
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.apache.commons.codec.binary.Hex
 
 import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, DurationInt}
-import scala.util.Random
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Random, Success}
 
 object Swordfish extends App {
   val system1HashedPassword = "5aea476328379d3bff2204501bb57aa8b4268fac" // 5 characters, a-z, A-Z, 0-9
@@ -16,7 +17,7 @@ object Swordfish extends App {
   private val messageDigest: MessageDigest = java.security.MessageDigest.getInstance("SHA-1")
   implicit val system: ActorSystem = ActorSystem()
 
-  println(s"The correct password ${swordfish1(10 minutes)}")
+  println(s"The correct password is: " + Await.result(swordfish1(), 8 hours))
 
   def randomSymbol: Char = {
     Random.nextInt(3) match {
@@ -26,12 +27,12 @@ object Swordfish extends App {
     }
   }
 
-  def randomPasswords(length: Int): LazyList[String] = {
+  def randomPassword(length: Int): String = {
     var randomPassword = ""
-    for(_ <- 1 to length) {
+    for (_ <- 1 to length) {
       randomPassword += randomSymbol
     }
-    randomPassword #:: randomPasswords(length)
+    randomPassword
   }
 
   def hashMatcher(hash: String) =
@@ -44,12 +45,26 @@ object Swordfish extends App {
     Hex.encodeHexString(messageDigest.digest())
   }
 
-  // TODO broadcast to two sinks, one counting the attempts, like:
-  // def countSink = Sink.fold[Int, String](0)((acc, _) => acc + 1)
+  def countSink = Sink.fold[Int, String](0)((acc, _) => acc + 1)
 
-  def swordfish1(duration: Duration): String = {
-    Await.result(Source(randomPasswords(length = 5))
+  def swordfish1() = {
+    val (fut1, fut2) = Source(1 to 1_000_000_000)
+      .map(_ => randomPassword(length = 5))
       .via(hashMatcher(system1HashedPassword))
-      .runWith(Sink.head), duration)
+      .alsoToMat(Sink.head)(Keep.right)
+      .toMat(countSink)(Keep.both)
+      .run()
+
+    fut1.onComplete {
+      case Success(password) => println(s"The password is $password")
+      case Failure(_)
+      =>
+    }
+
+    fut2.onComplete {
+      case Success(count) => println(s"The total count is $count")
+      case Failure(_) =>
+    }
+    fut1
   }
 }
