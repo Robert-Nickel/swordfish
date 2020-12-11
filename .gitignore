@@ -150,3 +150,4 @@ target/streams/runtime/externalDependencyClasspath/_global/streams/export
 target/streams/runtime/managedClasspath/_global/streams/export
 target/streams/test/externalDependencyClasspath/_global/streams/export
 target/streams/test/managedClasspath/_global/streams/export
+*.class
