@@ -5,19 +5,22 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.apache.commons.codec.binary.Hex
 
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Random, Success}
+import scala.util.Random
 
 object Swordfish extends App {
-  val system1HashedPassword = "5aea476328379d3bff2204501bb57aa8b4268fac" // 5 characters, a-z, A-Z, 0-9
-  val system2HashedPassword = "d31d62ed0af022248e28fc0dc4a9580217987e55" // 10 characters, a-z, A-Z, 0-9
-  val system3HashedPassword = "66ceeafde8453dda201978b2b497b9c85d4b6da5" // 5-10 characters, a-z, A-Z, 0-9
+  // 10 characters, a-z, A-Z, 0-9 => result: X42a0
+  val system1HashedPassword = "5aea476328379d3bff2204501bb57aa8b4268fac"
+  // 10 characters, a-z, A-Z, 0-9 => ~quadrillion combinations
+  val system2HashedPassword = "d31d62ed0af022248e28fc0dc4a9580217987e55"
+  // 5-10 characters, a-z, A-Z, 0-9 => ~ too many combinations
+  val system3HashedPassword = "66ceeafde8453dda201978b2b497b9c85d4b6da5"
 
   private val messageDigest: MessageDigest = java.security.MessageDigest.getInstance("SHA-1")
   implicit val system: ActorSystem = ActorSystem()
 
-  println(s"The correct password is: " + Await.result(swordfish1(), 8 hours))
+  //println(s"The correct password for system 1 is: " + Await.result(swordfish1(), 10 minutes))
+  println(s"The correct password for system 2 is: " + Await.result(swordfish2(), 8 hours))
 
   def randomSymbol: Char = {
     Random.nextInt(3) match {
@@ -48,23 +51,18 @@ object Swordfish extends App {
   def countSink = Sink.fold[Int, String](0)((acc, _) => acc + 1)
 
   def swordfish1() = {
-    val (fut1, fut2) = Source(1 to 1_000_000_000)
+    Source(1 to 1_000_000_000)
       .map(_ => randomPassword(length = 5))
       .via(hashMatcher(system1HashedPassword))
-      .alsoToMat(Sink.head)(Keep.right)
-      .toMat(countSink)(Keep.both)
+      .toMat(Sink.head)(Keep.right)
       .run()
+  }
 
-    fut1.onComplete {
-      case Success(password) => println(s"The password is $password")
-      case Failure(_)
-      =>
-    }
-
-    fut2.onComplete {
-      case Success(count) => println(s"The total count is $count")
-      case Failure(_) =>
-    }
-    fut1
+  def swordfish2() = {
+    Source(1 to 1_000_000_000)
+      .map(_ => randomPassword(length = 10))
+      .via(hashMatcher(system1HashedPassword))
+      .toMat(Sink.head)(Keep.right)
+      .run()
   }
 }
