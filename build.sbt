@@ -20,5 +20,7 @@ libraryDependencies ++= Seq(
 )
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "org.opendaylight.odlparent" % "odl-apache-commons-codec" % "8.0.2"
+libraryDependencies += "org.slf4j" % "slf4j-api" % "2.0.0-alpha1"
+
 
 
