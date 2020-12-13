@@ -19,29 +19,33 @@ object Swordfish extends App {
   /** 10 characters
    * => 62^5 = 916132832 combinations
    * => ~22 minutes
-   * => result: X42a0 */
+   * => result: X42a0
+   **/
   val system1Hash = "5aea476328379d3bff2204501bb57aa8b4268fac"
 
   /**
    * 10 characters
    * => 62^10 = 839_299_365_868_340_200 combinations
    * => 38_590.31 years
-   * => result: unknown */
+   * => result: unknown
+   **/
   val system2Hash = "d31d62ed0af022248e28fc0dc4a9580217987e55"
 
   /** 5-10 characters
    * => 62^5+62^6+62^7+62^8+62^9+62^10 = 853_058_371_851_163_300 combinations
    * => 39_222.94 years
-   * => result: unknown */
+   * => result: unknown
+   **/
   val system3Hash = "66ceeafde8453dda201978b2b497b9c85d4b6da5"
 
   val messageDigest: MessageDigest = java.security.MessageDigest.getInstance("SHA-1")
   implicit val system: ActorSystem = ActorSystem()
 
+  // THIS IS IMPORTANT vv
   // ___________________________________________________________________________________________________________________
-  println(s"The correct password for system 2 is: " + Await.result(start(system2Hash, 5, 10), 24 hours))
+  println(s"The correct password for system 3 is: " + Await.result(start(system3Hash, 5, 10), 24 hours))
   // ___________________________________________________________________________________________________________________
-
+  // THIS IS IMPORTANT ^^
 
   def randomSymbol: Char = {
     Random.nextInt(3) match {
