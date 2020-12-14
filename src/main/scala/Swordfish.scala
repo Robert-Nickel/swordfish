@@ -3,6 +3,7 @@ import java.security.MessageDigest
 import SpeedMeter.measureSpeed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import com.typesafe.config.ConfigFactory
 import org.apache.commons.codec.binary.Hex
 
 import scala.concurrent.{Await, Future}
@@ -14,19 +15,17 @@ import scala.util.Random
 object Swordfish extends App {
   val messageDigest: MessageDigest = java.security.MessageDigest.getInstance("SHA-1")
   implicit val system: ActorSystem = ActorSystem()
-
   println("Swordfish reverts hashes for passwords that contain: a-z, A-Z & 0-9")
   val hash = StdIn.readLine("Enter the hash you want to revert: ")
   val length = StdIn.readLine("Enter the length of the password (e.g. 5 or 5-9): ")
   println("Doing a quick speed test")
   val speed = measureSpeed
   println(s"1_000_000 attempts took $speed milliseconds.")
-
-  private val eventualString: Future[String] = if (length.contains("-")) {
+  val eventualString: Future[String] = if (length.contains("-")) {
     val fromTo = length.split("-")
-    start(hash, fromTo(0).toInt, fromTo(1).toInt)
+    start(hash, fromTo(0).toInt, fromTo(1).toInt, speed = speed)
   } else {
-    start(hash, length.toInt)
+    start(hash, length.toInt, speed = speed)
   }
   println(s"The reverted hash is: " + Await.result(eventualString, 100 days))
 
@@ -56,7 +55,7 @@ object Swordfish extends App {
     Hex.encodeHexString(messageDigest.digest())
   }
 
-  def start(hash: String, from: Int, to: Int = -1) = {
+  def start(hash: String, from: Int, to: Int = -1, speed: Int) = {
     println(s"Starting to find passwords for $hash with ${
       if (to == -1) {
         from.toString
